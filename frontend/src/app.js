@@ -72,6 +72,15 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
         pruneSessionInterval: false
       });
 
+      // CRITICAL: connect-pg-simple emits 'error' on the store when async
+      // operations fail (e.g. createTableIfMissing DNS failure). Without this
+      // listener, Node.js EventEmitter throws it as an uncaughtException that
+      // kills the process — which is why health checks pass but the first
+      // browser request gets 502 (process is already dead).
+      pgStore.on("error", (err) => {
+        console.error("Session store error (non-fatal):", err.message);
+      });
+
       // Make session store failures non-fatal so the portal can still respond
       // even if Postgres is temporarily unavailable.
       const wrapStoreMethod = (methodName, onErrorValue = undefined) => {
@@ -120,6 +129,10 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
   }
 
   app.use(session(sessionConfig));
+
+  // Health check lives before CSRF/session middleware so it always responds,
+  // confirming the process is alive regardless of session store state.
+  app.get("/healthz", (_req, res) => res.status(200).json({ status: "ok" }));
 
   app.use(csrf());
   app.use(flashMiddleware);
