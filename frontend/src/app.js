@@ -51,6 +51,7 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
 
   if (env.databaseUrl && env.isProduction) {
     try {
+      console.log("[startup] Attempting to set up Postgres session store...");
       const pgSession = connectPgSimple(session);
       const pool = new Pool({
         connectionString: env.databaseUrl,
@@ -61,7 +62,7 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
 
       // Prevent uncaught idle-connection errors from crashing the process.
       pool.on("error", (err) => {
-        console.error("Session pool error:", err.message);
+        console.error("[startup] Session pool error:", err.message);
       });
 
       const pgStore = new pgSession({
@@ -78,7 +79,7 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
       // kills the process — which is why health checks pass but the first
       // browser request gets 502 (process is already dead).
       pgStore.on("error", (err) => {
-        console.error("Session store error (non-fatal):", err.message);
+        console.error("[startup] Session store error (non-fatal):", err.message);
       });
 
       // Make session store failures non-fatal so the portal can still respond
@@ -122,17 +123,23 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
 
       sessionConfig.store = pgStore;
       app.locals.sessionPool = pool;
-      console.log("Using Postgres session store:", env.sessionTableName);
+      console.log("[startup] Postgres session store initialized:", env.sessionTableName);
     } catch (storeErr) {
-      console.warn("Postgres session store setup failed, falling back to MemoryStore:", storeErr.message);
+      console.warn("[startup] Postgres session store setup failed, falling back to MemoryStore:", storeErr.message);
     }
+  } else if (env.isProduction) {
+    console.warn("[startup] DATABASE_URL not set in production; using MemoryStore (sessions will be lost on restart)");
   }
 
   app.use(session(sessionConfig));
 
   // Health check lives before CSRF/session middleware so it always responds,
   // confirming the process is alive regardless of session store state.
-  app.get("/healthz", (_req, res) => res.status(200).json({ status: "ok" }));
+  app.get("/healthz", (_req, res) => {
+    // eslint-disable-next-line no-console
+    console.log("[healthz] health check pinged");
+    return res.status(200).json({ status: "ok" });
+  });
 
   app.use(csrf());
   app.use(flashMiddleware);
