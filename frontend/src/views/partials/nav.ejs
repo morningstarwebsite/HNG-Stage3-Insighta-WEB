@@ -1,0 +1,17 @@
+<header class="shell-header">
+  <div class="container nav-row">
+    <a class="brand" href="/dashboard">Insighta Labs+</a>
+    <% if (currentUser) { %>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="/dashboard" class="<%= path === '/dashboard' ? 'active' : '' %>">Dashboard</a>
+        <a href="/profiles" class="<%= path.startsWith('/profiles') ? 'active' : '' %>">Profiles</a>
+        <a href="/search" class="<%= path === '/search' ? 'active' : '' %>">Search</a>
+        <a href="/account" class="<%= path === '/account' ? 'active' : '' %>">Account</a>
+      </nav>
+      <form action="/logout" method="post" class="logout-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button type="submit" class="btn btn-link">Log out</button>
+      </form>
+    <% } %>
+  </div>
+</header>

@@ -1,0 +1,85 @@
+<%- include('partials/head', { title }) %>
+<%- include('partials/nav') %>
+<main class="container page">
+  <section class="page-header">
+    <h1>Profiles</h1>
+    <p>Filter, sort, and browse profile records.</p>
+  </section>
+
+  <form class="filter-grid" method="get" action="/profiles">
+    <label>
+      Search
+      <input type="text" name="query" value="<%= filters.query %>" placeholder="name, title, company" />
+    </label>
+    <label>
+      Role
+      <select name="role">
+        <option value="" <%= filters.role === '' ? 'selected' : '' %>>All</option>
+        <option value="admin" <%= filters.role === 'admin' ? 'selected' : '' %>>Admin</option>
+        <option value="manager" <%= filters.role === 'manager' ? 'selected' : '' %>>Manager</option>
+        <option value="viewer" <%= filters.role === 'viewer' ? 'selected' : '' %>>Viewer</option>
+      </select>
+    </label>
+    <label>
+      Status
+      <select name="status">
+        <option value="" <%= filters.status === '' ? 'selected' : '' %>>All</option>
+        <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active</option>
+        <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
+      </select>
+    </label>
+    <label>
+      Sort
+      <select name="sort">
+        <option value="updated_at:desc" <%= filters.sort === 'updated_at:desc' ? 'selected' : '' %>>Recently Updated</option>
+        <option value="name:asc" <%= filters.sort === 'name:asc' ? 'selected' : '' %>>Name A-Z</option>
+        <option value="name:desc" <%= filters.sort === 'name:desc' ? 'selected' : '' %>>Name Z-A</option>
+      </select>
+    </label>
+    <button type="submit" class="btn">Apply</button>
+  </form>
+
+  <% if (items.length === 0) { %>
+    <section class="panel"><%- include('partials/empty-state', { message: 'No profiles match the current filters.' }) %></section>
+  <% } else { %>
+    <section class="panel">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% items.forEach((profile) => { %>
+            <tr>
+              <td><%= profile.name || 'Unknown' %></td>
+              <td><%= profile.email || 'N/A' %></td>
+              <td><%= profile.role || 'N/A' %></td>
+              <td><%= profile.status || 'N/A' %></td>
+              <td><a href="/profiles/<%= profile.id %>">Open</a></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </section>
+  <% } %>
+
+  <section class="pagination-row">
+    <span>Page <%= pagination.page %> of <%= pagination.pages %></span>
+    <div class="pagination-links">
+      <% const prevPage = pagination.page - 1; %>
+      <% const nextPage = pagination.page + 1; %>
+      <% if (prevPage > 0) { %>
+        <a href="/profiles?<%= new URLSearchParams({ ...filters, page: prevPage, limit: pagination.limit }).toString() %>">Previous</a>
+      <% } %>
+      <% if (nextPage <= pagination.pages) { %>
+        <a href="/profiles?<%= new URLSearchParams({ ...filters, page: nextPage, limit: pagination.limit }).toString() %>">Next</a>
+      <% } %>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

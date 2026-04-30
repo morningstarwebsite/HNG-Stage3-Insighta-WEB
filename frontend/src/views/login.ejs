@@ -1,0 +1,13 @@
+<%- include('partials/head', { title }) %>
+<main class="auth-page">
+  <section class="auth-card">
+    <h1>Internal Portal</h1>
+    <p>Sign in with GitHub to access Insighta Labs+ dashboards and profiles.</p>
+    <% if (expired) { %>
+      <div class="inline-alert">Your session expired. Please sign in again.</div>
+    <% } %>
+    <%- include('partials/flash') %>
+    <a class="btn btn-primary btn-block" href="/auth/github?returnTo=/dashboard">Continue with GitHub</a>
+  </section>
+</main>
+<%- include('partials/footer') %>

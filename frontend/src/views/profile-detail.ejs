@@ -1,0 +1,29 @@
+<%- include('partials/head', { title }) %>
+<%- include('partials/nav') %>
+<main class="container page">
+  <section class="page-header">
+    <h1>Profile Detail</h1>
+    <p>View a single profile record.</p>
+  </section>
+
+  <% if (!profile) { %>
+    <section class="panel"><p class="muted">Profile not found.</p></section>
+  <% } else { %>
+    <section class="panel profile-grid">
+      <div><strong>ID</strong><p><%= profile.id %></p></div>
+      <div><strong>Name</strong><p><%= profile.name || 'N/A' %></p></div>
+      <div><strong>Email</strong><p><%= profile.email || 'N/A' %></p></div>
+      <div><strong>Role</strong><p><%= profile.role || 'N/A' %></p></div>
+      <div><strong>Status</strong><p><%= profile.status || 'N/A' %></p></div>
+      <div><strong>Joined</strong><p><%= profile.createdAt || profile.created_at || 'N/A' %></p></div>
+    </section>
+
+    <% if (canManageProfiles) { %>
+      <section class="panel">
+        <h2>Management</h2>
+        <p class="muted">You can manage this profile in authorized backend workflows.</p>
+      </section>
+    <% } %>
+  <% } %>
+</main>
+<%- include('partials/footer') %>

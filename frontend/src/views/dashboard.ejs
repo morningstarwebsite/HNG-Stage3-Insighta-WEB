@@ -1,0 +1,48 @@
+<%- include('partials/head', { title }) %>
+<%- include('partials/nav') %>
+<main class="container page">
+  <%- include('partials/flash') %>
+  <section class="page-header">
+    <h1>Dashboard</h1>
+    <p>Live metrics from backend API v1.</p>
+  </section>
+
+  <section class="metrics-grid">
+    <article class="metric-card">
+      <h2>Total Profiles</h2>
+      <p class="metric-value"><%= metrics.totalProfiles ?? 'N/A' %></p>
+    </article>
+    <article class="metric-card">
+      <h2>Active Profiles</h2>
+      <p class="metric-value"><%= metrics.activeProfiles ?? 'N/A' %></p>
+    </article>
+    <article class="metric-card">
+      <h2>Searches Today</h2>
+      <p class="metric-value"><%= metrics.searchesToday ?? 'N/A' %></p>
+    </article>
+  </section>
+
+  <section class="panel">
+    <h2>Recent Highlights</h2>
+    <% if (highlights.length === 0) { %>
+      <%- include('partials/empty-state', { message: 'No highlights were returned yet.' }) %>
+    <% } else { %>
+      <ul class="list-clean">
+        <% highlights.forEach((item) => { %>
+          <li><%= item.label || item.title || JSON.stringify(item) %></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+
+  <% if (isAdmin) { %>
+    <section class="panel">
+      <h2>Admin Actions</h2>
+      <form method="post" action="/admin/profiles/sync">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button type="submit" class="btn">Trigger Profile Sync</button>
+      </form>
+    </section>
+  <% } %>
+</main>
+<%- include('partials/footer') %>
