@@ -4,6 +4,14 @@ dotenv.config();
 
 const isProduction = process.env.NODE_ENV === "production";
 
+function asBoolean(value, fallback = false) {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  return String(value).toLowerCase() === "true";
+}
+
 function required(name, fallback) {
   const value = process.env[name] ?? fallback;
   if (!value) {
@@ -23,5 +31,8 @@ export const env = {
   backendAuthStartPath: process.env.BACKEND_AUTH_START_PATH || "/auth/github",
   backendAuthExchangePath: process.env.BACKEND_AUTH_EXCHANGE_PATH || "/auth/github/callback",
   backendMePath: process.env.BACKEND_ME_PATH || "/auth/me",
-  backendLogoutPath: process.env.BACKEND_LOGOUT_PATH || "/auth/logout"
+  backendLogoutPath: process.env.BACKEND_LOGOUT_PATH || "/auth/logout",
+  databaseUrl: process.env.DATABASE_URL || "",
+  sessionTableName: process.env.SESSION_TABLE_NAME || "user_sessions",
+  pgSsl: asBoolean(process.env.PG_SSL, isProduction)
 };

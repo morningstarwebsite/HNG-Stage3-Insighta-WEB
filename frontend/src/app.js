@@ -1,10 +1,12 @@
 import cookieParser from "cookie-parser";
+import connectPgSimple from "connect-pg-simple";
 import csrf from "csurf";
 import express from "express";
 import session from "express-session";
 import helmet from "helmet";
 import morgan from "morgan";
 import path from "node:path";
+import pg from "pg";
 import { fileURLToPath } from "node:url";
 import { env } from "./config/env.js";
 import { flashMiddleware } from "./middleware/flash.js";
@@ -14,9 +16,13 @@ import { BackendClient } from "./services/backendClient.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const { Pool } = pg;
 
 export function createApp({ backendClient = new BackendClient(env) } = {}) {
   const app = express();
+
+  // Railway terminates TLS at the edge proxy.
+  app.set("trust proxy", 1);
 
   app.set("views", path.join(__dirname, "views"));
   app.set("view engine", "ejs");
@@ -30,7 +36,7 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
   app.use(express.json());
 
   app.use(cookieParser());
-  app.use(session({
+  const sessionConfig = {
     name: "insighta.sid",
     secret: env.sessionSecret,
     resave: false,
@@ -41,7 +47,26 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
       sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 8
     }
-  }));
+  };
+
+  if (env.databaseUrl) {
+    const pgSession = connectPgSimple(session);
+    const pool = new Pool({
+      connectionString: env.databaseUrl,
+      ssl: env.pgSsl ? { rejectUnauthorized: false } : false
+    });
+
+    sessionConfig.store = new pgSession({
+      pool,
+      tableName: env.sessionTableName,
+      createTableIfMissing: true,
+      pruneSessionInterval: 60 * 15
+    });
+
+    app.locals.sessionPool = pool;
+  }
+
+  app.use(session(sessionConfig));
 
   app.use(csrf());
   app.use(flashMiddleware);
