@@ -68,21 +68,48 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
         pool,
         tableName: env.sessionTableName,
         createTableIfMissing: true,
-        pruneSessionInterval: 60 * 15
+        // Disable background pruning to avoid noisy repeated failures when DB is down.
+        pruneSessionInterval: false
       });
 
-      // Make session-load errors non-fatal: treat a DB failure as an empty
-      // session so the request continues rather than cascading to an error page.
-      const _originalGet = pgStore.get.bind(pgStore);
-      pgStore.get = function degradedGet(sid, fn) {
-        _originalGet(sid, (err, sessionData) => {
-          if (err) {
-            console.warn("Session load error (degraded to anonymous):", err.message);
-            return fn(null, null);
+      // Make session store failures non-fatal so the portal can still respond
+      // even if Postgres is temporarily unavailable.
+      const wrapStoreMethod = (methodName, onErrorValue = undefined) => {
+        if (typeof pgStore[methodName] !== "function") {
+          return;
+        }
+
+        const original = pgStore[methodName].bind(pgStore);
+        pgStore[methodName] = (...args) => {
+          const callback = typeof args[args.length - 1] === "function"
+            ? args.pop()
+            : null;
+
+          const done = (err, value) => {
+            if (err) {
+              console.warn(`Session store ${methodName} error (degraded):`, err.message);
+              if (callback) {
+                return callback(null, onErrorValue);
+              }
+              return;
+            }
+            if (callback) {
+              return callback(null, value);
+            }
+          };
+
+          if (callback) {
+            return original(...args, done);
           }
-          return fn(null, sessionData);
-        });
+
+          return original(...args);
+        };
       };
+
+      wrapStoreMethod("get", null);
+      wrapStoreMethod("set");
+      wrapStoreMethod("touch");
+      wrapStoreMethod("destroy");
 
       sessionConfig.store = pgStore;
       app.locals.sessionPool = pool;
