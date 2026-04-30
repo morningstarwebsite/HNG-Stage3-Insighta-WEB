@@ -49,7 +49,7 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
     }
   };
 
-  if (env.databaseUrl) {
+  if (env.databaseUrl && env.isProduction) {
     const pgSession = connectPgSimple(session);
     const pool = new Pool({
       connectionString: env.databaseUrl,
@@ -109,14 +109,16 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
   app.use("/", createRouter(backendClient));
 
   app.use((error, req, res, next) => {
+    if (res.headersSent) return;
     if (error.code === "EBADCSRFTOKEN") {
-      req.flash("error", "Invalid or expired form token. Please retry.");
+      try { req.flash("error", "Invalid or expired form token. Please retry."); } catch (_) {}
       return res.redirect("back");
     }
     return next(error);
   });
 
   app.use((error, req, res, next) => {
+    if (res.headersSent) return;
     const statusCode = error.statusCode || 500;
     res.status(statusCode).render("error", {
       title: statusCode === 404 ? "Not found" : "Something went wrong",

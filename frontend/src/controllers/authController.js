@@ -53,13 +53,13 @@ export function authController(backendClient) {
           });
         }
 
-        await new Promise((resolve, reject) => {
-          req.session.save((error) => {
-            if (error) {
-              reject(error);
-              return;
+        await new Promise((resolve) => {
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              // Non-fatal: log and continue. In-memory state is still valid for this request.
+              // eslint-disable-next-line no-console
+              console.warn("Session save warning before OAuth redirect:", saveErr.message);
             }
-
             resolve();
           });
         });

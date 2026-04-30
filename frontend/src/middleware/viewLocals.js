@@ -7,7 +7,11 @@ export function viewLocalsMiddleware(req, res, next) {
   res.locals.canManageProfiles = canManageProfiles(res.locals.currentUser);
 
   if (typeof req.csrfToken === "function") {
-    res.locals.csrfToken = req.csrfToken();
+    try {
+      res.locals.csrfToken = req.csrfToken();
+    } catch (_) {
+      res.locals.csrfToken = "";
+    }
   }
 
   next();
