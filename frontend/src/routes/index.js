@@ -18,7 +18,11 @@ export function createRouter(backendClient) {
   const admin = adminController(backendClient);
   const mustBeAuthenticated = requireAuth(backendClient);
 
-  router.get("/", mustBeAuthenticated, (req, res) => res.redirect("/dashboard"));
+  router.get("/healthz", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
+
+  router.get("/", auth.showLogin);
 
   router.get("/login", auth.showLogin);
   router.get("/auth/github", auth.startGithub);
