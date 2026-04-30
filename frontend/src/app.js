@@ -50,20 +50,46 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
   };
 
   if (env.databaseUrl && env.isProduction) {
-    const pgSession = connectPgSimple(session);
-    const pool = new Pool({
-      connectionString: env.databaseUrl,
-      ssl: env.pgSsl ? { rejectUnauthorized: false } : false
-    });
+    try {
+      const pgSession = connectPgSimple(session);
+      const pool = new Pool({
+        connectionString: env.databaseUrl,
+        ssl: env.pgSsl ? { rejectUnauthorized: false } : false,
+        connectionTimeoutMillis: 5000,
+        idleTimeoutMillis: 10000
+      });
 
-    sessionConfig.store = new pgSession({
-      pool,
-      tableName: env.sessionTableName,
-      createTableIfMissing: true,
-      pruneSessionInterval: 60 * 15
-    });
+      // Prevent uncaught idle-connection errors from crashing the process.
+      pool.on("error", (err) => {
+        console.error("Session pool error:", err.message);
+      });
 
-    app.locals.sessionPool = pool;
+      const pgStore = new pgSession({
+        pool,
+        tableName: env.sessionTableName,
+        createTableIfMissing: true,
+        pruneSessionInterval: 60 * 15
+      });
+
+      // Make session-load errors non-fatal: treat a DB failure as an empty
+      // session so the request continues rather than cascading to an error page.
+      const _originalGet = pgStore.get.bind(pgStore);
+      pgStore.get = function degradedGet(sid, fn) {
+        _originalGet(sid, (err, sessionData) => {
+          if (err) {
+            console.warn("Session load error (degraded to anonymous):", err.message);
+            return fn(null, null);
+          }
+          return fn(null, sessionData);
+        });
+      };
+
+      sessionConfig.store = pgStore;
+      app.locals.sessionPool = pool;
+      console.log("Using Postgres session store:", env.sessionTableName);
+    } catch (storeErr) {
+      console.warn("Postgres session store setup failed, falling back to MemoryStore:", storeErr.message);
+    }
   }
 
   app.use(session(sessionConfig));
