@@ -1,0 +1,32 @@
+<%- include('partials/head', { title }) %>
+<%- include('partials/nav') %>
+<main class="container page">
+  <section class="page-header">
+    <h1>Search</h1>
+    <p>Use natural language queries against backend search.</p>
+  </section>
+
+  <form class="search-row" method="get" action="/search">
+    <input type="text" name="q" value="<%= queryText %>" placeholder="Try: data scientists in Lagos with active status" />
+    <button class="btn" type="submit">Search</button>
+  </form>
+
+  <% if (!queryText) { %>
+    <section class="panel"><%- include('partials/empty-state', { message: 'Enter a query to see results.' }) %></section>
+  <% } else if (results.length === 0) { %>
+    <section class="panel"><%- include('partials/empty-state', { message: `No results for "${queryText}".` }) %></section>
+  <% } else { %>
+    <section class="panel">
+      <p class="muted"><%= total %> result(s)</p>
+      <ul class="list-clean">
+        <% results.forEach((item) => { %>
+          <li>
+            <a href="/profiles/<%= item.id %>"><%= item.name || item.title || item.id %></a>
+            <span class="meta"><%= item.role || item.status || '' %></span>
+          </li>
+        <% }) %>
+      </ul>
+    </section>
+  <% } %>
+</main>
+<%- include('partials/footer') %>

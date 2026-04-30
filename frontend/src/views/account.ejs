@@ -1,0 +1,16 @@
+<%- include('partials/head', { title }) %>
+<%- include('partials/nav') %>
+<main class="container page">
+  <section class="page-header">
+    <h1>Account</h1>
+    <p>Your current backend-authenticated profile.</p>
+  </section>
+
+  <section class="panel profile-grid">
+    <div><strong>Name</strong><p><%= user?.name || 'N/A' %></p></div>
+    <div><strong>Email</strong><p><%= user?.email || 'N/A' %></p></div>
+    <div><strong>Role</strong><p><%= user?.role || 'N/A' %></p></div>
+    <div><strong>ID</strong><p><%= user?.id || 'N/A' %></p></div>
+  </section>
+</main>
+<%- include('partials/footer') %>
