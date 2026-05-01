@@ -29,6 +29,7 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   isProduction,
   port: Number(process.env.PORT || 3000),
+  sessionStore: (process.env.SESSION_STORE || "auto").toLowerCase(),
   portalBaseUrl: required("PORTAL_BASE_URL", "http://localhost:3000"),
   sessionSecret: required("SESSION_SECRET", "change-me-in-production"),
   backendBaseUrl: required("BACKEND_BASE_URL", "http://localhost:8080"),

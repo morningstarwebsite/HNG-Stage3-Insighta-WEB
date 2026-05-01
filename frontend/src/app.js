@@ -49,7 +49,10 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
     }
   };
 
-  if (env.databaseUrl && env.isProduction) {
+  const wantsMemorySessions = env.sessionStore === "memory";
+  const canUsePostgresSessions = env.databaseUrl && env.isProduction && !wantsMemorySessions;
+
+  if (canUsePostgresSessions) {
     try {
       console.log("[startup] Attempting to set up Postgres session store...");
       const pgSession = connectPgSimple(session);
@@ -124,6 +127,8 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
     } catch (storeErr) {
       console.warn("[startup] Postgres session store setup failed, falling back to MemoryStore:", storeErr.message);
     }
+  } else if (env.isProduction && wantsMemorySessions) {
+    console.warn("[startup] SESSION_STORE=memory; using MemoryStore by configuration");
   } else if (env.isProduction) {
     console.warn("[startup] DATABASE_URL not set in production; using MemoryStore (sessions will be lost on restart)");
   }
