@@ -111,3 +111,19 @@ test("shows login again if backend oauth start fails", async () => {
   const res = await request(app).get("/auth/github").expect(302).expect("Location", "/login");
   assert.ok(res.headers["set-cookie"]);
 });
+
+test("blocks local login when backend returns non-local oauth callback origin", async () => {
+  const app = createApp({
+    backendClient: {
+      ...createMockBackendClient(),
+      async startOAuth() {
+        return {
+          authUrl:
+            "https://github.com/login/oauth/authorize?client_id=test-client&redirect_uri=https%3A%2F%2Fhng-stage3-insighta-web-production.up.railway.app%2Fauth%2Fcallback&state=test-state"
+        };
+      }
+    }
+  });
+
+  await request(app).get("/auth/github").expect(302).expect("Location", "/login");
+});

@@ -46,6 +46,31 @@ export function authController(backendClient) {
 
           authUrl = handshake.authUrl;
           req.session.backendOAuthCookie = handshake.backendOAuthCookie || null;
+
+          // In local development, fail fast if backend returns an OAuth callback
+          // bound to another origin (e.g., deployed Railway URL), because the
+          // login flow will never return to this local app instance.
+          if (!env.isProduction) {
+            const expectedOrigin = new URL(env.portalBaseUrl).origin;
+
+            try {
+              const parsedAuthUrl = new URL(authUrl);
+              const returnedRedirectUri = parsedAuthUrl.searchParams.get("redirect_uri");
+
+              if (returnedRedirectUri) {
+                const returnedOrigin = new URL(returnedRedirectUri).origin;
+                if (returnedOrigin !== expectedOrigin) {
+                  req.flash(
+                    "error",
+                    `OAuth callback origin mismatch. Expected ${expectedOrigin}, got ${returnedOrigin}. Update backend OAuth callback settings.`
+                  );
+                  return res.redirect("/login");
+                }
+              }
+            } catch {
+              // Ignore URL parsing errors and proceed with default flow.
+            }
+          }
         } else {
           authUrl = backendClient.buildAuthStartUrl({
             state,

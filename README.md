@@ -26,6 +26,7 @@ A lightweight server-rendered internal web portal that consumes the existing Ins
 1. Install dependencies:
 
    ```bash
+   cd frontend
    npm install
    ```
 
@@ -108,6 +109,7 @@ Current tests cover:
 - Use HTTPS in all non-local environments
 - Set a strong `SESSION_SECRET`
 - Set `PORTAL_BASE_URL` and backend URLs correctly for OAuth callback integrity
+- Optionally tune `BACKEND_REQUEST_TIMEOUT_MS` (default `12000`) to control backend call timeout behavior
 - Keep backend and portal session policies aligned
 - If portal and backend are on different origins, configure backend CORS minimally and only as needed
 
