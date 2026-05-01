@@ -66,7 +66,8 @@ export function authController(backendClient) {
 
         return res.redirect(authUrl);
       } catch (error) {
-        return next(error);
+        req.flash("error", "Unable to start GitHub login right now. Please try again.");
+        return res.redirect("/login");
       }
     },
 
@@ -76,6 +77,14 @@ export function authController(backendClient) {
 
         if (!code || !state) {
           req.flash("error", "Invalid login callback. Please try again.");
+          return res.redirect("/login");
+        }
+
+        if (!req.session?.oauthState || req.session.oauthState !== state) {
+          delete req.session.oauthState;
+          delete req.session.oauthReturnTo;
+          delete req.session.backendOAuthCookie;
+          req.flash("error", "Login verification failed. Please try again.");
           return res.redirect("/login");
         }
 
@@ -103,7 +112,8 @@ export function authController(backendClient) {
 
         return res.redirect(returnTo);
       } catch (error) {
-        return next(error);
+        req.flash("error", "Login failed. Please try again.");
+        return res.redirect("/login");
       }
     },
 

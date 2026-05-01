@@ -20,6 +20,11 @@ function required(name, fallback) {
   return value;
 }
 
+function asPositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   isProduction,
@@ -32,6 +37,7 @@ export const env = {
   backendAuthExchangePath: process.env.BACKEND_AUTH_EXCHANGE_PATH || "/auth/github/callback",
   backendMePath: process.env.BACKEND_ME_PATH || "/auth/me",
   backendLogoutPath: process.env.BACKEND_LOGOUT_PATH || "/auth/logout",
+  backendRequestTimeoutMs: asPositiveInt(process.env.BACKEND_REQUEST_TIMEOUT_MS, 12000),
   databaseUrl: process.env.DATABASE_URL || "",
   sessionTableName: process.env.SESSION_TABLE_NAME || "user_sessions",
   pgSsl: asBoolean(process.env.PG_SSL, isProduction)

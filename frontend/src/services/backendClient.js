@@ -33,6 +33,7 @@ export class BackendClient {
     this.authExchangePath = config.backendAuthExchangePath;
     this.mePath = config.backendMePath;
     this.logoutPath = config.backendLogoutPath;
+    this.requestTimeoutMs = config.backendRequestTimeoutMs;
   }
 
   buildAuthStartUrl({ redirectUri, state }) {
@@ -47,14 +48,23 @@ export class BackendClient {
     url.searchParams.set("redirect_uri", redirectUri);
     url.searchParams.set("state", state);
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "X-API-Version": this.apiVersion
-      },
-      redirect: "manual"
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "X-API-Version": this.apiVersion
+        },
+        redirect: "manual",
+        signal: AbortSignal.timeout(this.requestTimeoutMs)
+      });
+    } catch (error) {
+      if (error?.name === "TimeoutError") {
+        throw new ApiError("Backend OAuth request timed out", 504);
+      }
+      throw new ApiError("Backend OAuth request failed", 502, { cause: error?.message });
+    }
 
     if (![301, 302, 303, 307, 308].includes(response.status)) {
       throw new ApiError("Backend OAuth start did not return redirect", response.status);
@@ -166,11 +176,20 @@ export class BackendClient {
       payload = JSON.stringify(body);
     }
 
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: payload
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        method,
+        headers,
+        body: payload,
+        signal: AbortSignal.timeout(this.requestTimeoutMs)
+      });
+    } catch (error) {
+      if (error?.name === "TimeoutError") {
+        throw new ApiError("Backend request timed out", 504);
+      }
+      throw new ApiError("Backend request failed", 502, { cause: error?.message });
+    }
 
     const contentType = response.headers.get("content-type") || "";
     const isJson = contentType.includes("application/json");

@@ -83,3 +83,31 @@ test("hides admin-only action for non-admin role", async () => {
   const res = await agent.get("/dashboard").expect(200);
   assert.doesNotMatch(res.text, /Trigger Profile Sync/);
 });
+
+test("rejects oauth callback when state does not match session", async () => {
+  const app = createApp({ backendClient: createMockBackendClient() });
+  const agent = request.agent(app);
+
+  const start = await agent.get("/auth/github").expect(302);
+  const redirected = new URL(start.headers.location);
+  const validState = redirected.searchParams.get("state");
+  assert.ok(validState);
+
+  await agent.get("/auth/callback?code=fake-code&state=invalid-state").expect(302).expect("Location", "/login");
+
+  await agent.get("/dashboard").expect(302).expect("Location", "/login");
+});
+
+test("shows login again if backend oauth start fails", async () => {
+  const app = createApp({
+    backendClient: {
+      ...createMockBackendClient(),
+      async startOAuth() {
+        throw new Error("backend down");
+      }
+    }
+  });
+
+  const res = await request(app).get("/auth/github").expect(302).expect("Location", "/login");
+  assert.ok(res.headers["set-cookie"]);
+});

@@ -14,10 +14,11 @@ process.on("unhandledRejection", (reason) => {
 });
 
 const app = createApp();
+const port = env.port;
 
-app.listen(env.port, "0.0.0.0", () => {
+app.listen(port, "0.0.0.0", () => {
   // eslint-disable-next-line no-console
   console.log(
-    `[startup] Insighta portal listening on 0.0.0.0:${env.port} | NODE_ENV=${env.nodeEnv} | backend=${env.backendBaseUrl}`
+    `[startup] Insighta portal listening on 0.0.0.0:${port} | NODE_ENV=${env.nodeEnv} | backend=${env.backendBaseUrl}`
   );
 });
