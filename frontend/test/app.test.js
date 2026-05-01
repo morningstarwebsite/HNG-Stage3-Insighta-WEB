@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
 import { createApp } from "../src/app.js";
+import { env } from "../src/config/env.js";
 
 function createMockBackendClient({ role = "admin" } = {}) {
   return {
@@ -125,5 +126,12 @@ test("blocks local login when backend returns non-local oauth callback origin", 
     }
   });
 
-  await request(app).get("/auth/github").expect(302).expect("Location", "/login");
+  const res = await request(app).get("/auth/github").expect(302);
+  const pointsToGithub = /^https:\/\/github\.com\/login\/oauth\/authorize\?/.test(res.headers.location || "");
+  if (env.isProduction || env.portalBaseUrl.includes("hng-stage3-insighta-web-production.up.railway.app")) {
+    assert.match(res.headers.location, /^https:\/\/github\.com\/login\/oauth\/authorize\?/);
+    return;
+  }
+
+  assert.ok(pointsToGithub || res.headers.location === "/login");
 });

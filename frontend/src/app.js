@@ -117,9 +117,6 @@ export function createApp({ backendClient = new BackendClient(env) } = {}) {
       };
 
       wrapStoreMethod("get", null);
-      wrapStoreMethod("set");
-      wrapStoreMethod("touch");
-      wrapStoreMethod("destroy");
 
       sessionConfig.store = pgStore;
       app.locals.sessionPool = pool;

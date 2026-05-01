@@ -78,19 +78,19 @@ export function authController(backendClient) {
           });
         }
 
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
           req.session.save((saveErr) => {
             if (saveErr) {
-              // Non-fatal: log and continue. In-memory state is still valid for this request.
-              // eslint-disable-next-line no-console
-              console.warn("Session save warning before OAuth redirect:", saveErr.message);
+              return reject(saveErr);
             }
-            resolve();
+            return resolve();
           });
         });
 
         return res.redirect(authUrl);
       } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn("OAuth start failed:", error?.message || error);
         req.flash("error", "Unable to start GitHub login right now. Please try again.");
         return res.redirect("/login");
       }
