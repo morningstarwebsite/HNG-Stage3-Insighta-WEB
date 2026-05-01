@@ -68,6 +68,16 @@ export function authController(backendClient) {
           authUrl = handshake.authUrl;
           req.session.backendOAuthCookie = handshake.backendOAuthCookie || null;
 
+          try {
+            const parsedAuthUrl = new URL(authUrl);
+            const backendState = parsedAuthUrl.searchParams.get("state");
+            if (backendState) {
+              req.session.oauthState = backendState;
+            }
+          } catch {
+            // If parsing fails, keep the original generated state.
+          }
+
           // In local development, fail fast if backend returns an OAuth callback
           // bound to another origin (e.g., deployed Railway URL), because the
           // login flow will never return to this local app instance.
@@ -99,8 +109,9 @@ export function authController(backendClient) {
           });
         }
 
+        const effectiveState = req.session.oauthState || state;
         const cookieOptions = oauthCookieOptions();
-        res.cookie(OAUTH_STATE_COOKIE, state, cookieOptions);
+        res.cookie(OAUTH_STATE_COOKIE, effectiveState, cookieOptions);
         res.cookie(OAUTH_RETURN_TO_COOKIE, returnTo, cookieOptions);
         if (req.session.backendOAuthCookie) {
           res.cookie(OAUTH_BACKEND_COOKIE, req.session.backendOAuthCookie, cookieOptions);
